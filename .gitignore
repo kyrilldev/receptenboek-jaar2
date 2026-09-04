@@ -222,5 +222,21 @@ project.lock.json
 AppPackages/
 
 #####
-# End of core ignore list, below put you custom 'per project' settings (patterns or path)
+# Project-specifieke uitsluitingen (Receptenboek & HBO-ICT Richtlijnen)
 #####
+
+# Lokale dataopslag / JSON exports
+*.json.bak
+data/export/
+data/cache/
+
+# Test artefacts & Coverage rapportages
+TestResults/
+coverage/
+*.cobertura.xml
+*.opencover.xml
+
+# Lokale editor instellingen & tooling caches
+.vs/Receptenboek/
+*.userosv
+.ionide/

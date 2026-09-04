@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Receptenboek.Domain;
+using Receptenboek.Infrastructure.Repositories;
 
-namespace Receptenboek
+namespace Receptenboek.Presentation
 {
     public static class Receptenboek
     {

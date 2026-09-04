@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Receptenboek
+namespace Receptenboek.Domain
 {
     public class Recept
     {
