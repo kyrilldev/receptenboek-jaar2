@@ -1,6 +1,6 @@
 using System;
 
-namespace Receptenboek
+namespace Receptenboek.Presentation
 {
     public static class ConsoleHelper
     {

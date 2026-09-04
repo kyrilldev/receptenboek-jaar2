@@ -1,4 +1,4 @@
-namespace Receptenboek
+namespace Receptenboek.Domain
 {
     public class Ingredient
     {

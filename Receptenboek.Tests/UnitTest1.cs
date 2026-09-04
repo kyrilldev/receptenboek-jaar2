@@ -1,4 +1,6 @@
-﻿using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.ObjectModel;
+using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.ObjectModel;
+using Receptenboek.Domain;
+using Receptenboek.Application.Services;
 
 namespace Receptenboek.Tests;
 

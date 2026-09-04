@@ -1,11 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Receptenboek.Domain;
+using Receptenboek.Application.Interfaces;
 
-namespace Receptenboek
+namespace Receptenboek.Application.Services
 {
     public class ReceptenStatistiekService
     {

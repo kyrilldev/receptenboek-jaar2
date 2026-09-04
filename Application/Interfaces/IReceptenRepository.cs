@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Receptenboek.Domain;
 
-namespace Receptenboek
+namespace Receptenboek.Application.Interfaces
 {
     public interface IReceptenRepository
     {

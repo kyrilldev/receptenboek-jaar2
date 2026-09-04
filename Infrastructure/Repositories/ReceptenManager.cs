@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Receptenboek.Domain;
+using Receptenboek.Application.Interfaces;
 
-namespace Receptenboek
+namespace Receptenboek.Infrastructure.Repositories
 {
     public class ReceptenManager : IReceptenRepository
     {

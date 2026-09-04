@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Receptenboek
+namespace Receptenboek.Domain
 {
     public class HoofdgerechtRecept : Recept
     {
