@@ -21,5 +21,10 @@ namespace Receptenboek.Tests
         {
             _recepten.Add(recept);
         }
+
+        public bool VerwijderRecept(Recept recept)
+        {
+            return _recepten.Remove(recept);
+        }
     }
 }
