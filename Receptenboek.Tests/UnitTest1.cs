@@ -8,6 +8,7 @@ namespace Receptenboek.Tests;
 
 public class UnitTest1
 {
+    // Schalen van ingrediënten op basis van aantal personen
     [Theory]
     [InlineData(1, 20)]
     [InlineData(2, 40)]
@@ -25,6 +26,7 @@ public class UnitTest1
         Assert.Equal(verwachteHoeveelheid, hoeveelheid);
     }
 
+    // Plantaardige alternatieven voor ingrediënten
     [Theory]
     [InlineData(false, "melk")]
     [InlineData(true, "havermelk")]
@@ -40,6 +42,7 @@ public class UnitTest1
         Assert.Equal(verwachteNaam, naam);
     }
 
+    // Kcal-totaal passend bij aantal personen en plantaardige keuze
     [Fact]
     public void BerekenTotaalKcal_MeerderePersonen_BerekentCorrecteSom()
     {
@@ -60,6 +63,7 @@ public class UnitTest1
         Assert.Equal(780, totaalKcalVega);
     }
 
+    // ReceptFactory en subklasse-instantiatie
     [Fact]
     public void ReceptFactory_MaaktJuisteSubklasseEnKenmerk()
     {
@@ -79,6 +83,7 @@ public class UnitTest1
         Assert.Contains("IJskoud", toetje.ExtraInformatie);
     }
 
+    // Zoeken op naam en ingrediënt (inclusief plantaardig)
     [Theory]
     [InlineData("spaghetti", true)]
     [InlineData("SPAGHETTI", true)]
@@ -99,6 +104,7 @@ public class UnitTest1
         Assert.Equal(verwachtGevonden, resultaat);
     }
 
+    // Tips bij bereidingsstappen
     [Fact]
     public void Bereidingsstap_TipAanwezig_HeeftTipIsTrue()
     {
@@ -112,6 +118,7 @@ public class UnitTest1
         Assert.False(stapZonderTip.HeeftTip);
     }
 
+    // Toevoegen en verwijderen van recepten in repository
     [Fact]
     public void VoegReceptToe_En_VerwijderRecept_WerktCorrect()
     {
@@ -136,6 +143,7 @@ public class UnitTest1
         Assert.Empty(alleReceptenNaVerwijderen);
     }
 
+    // Berekenen van bereidingstijden en statistieken
     [Fact]
     public void BerekenTotaleBereidingstijd_MeerdereStappen_GeeftSomVanStappenDuur()
     {
@@ -182,6 +190,7 @@ public class UnitTest1
         Assert.Equal(0, average);
     }
 
+    // JSON persistentie en foutafhandeling
     [Fact]
     public void JsonPersistentie_SlaatOpEnLaadtOpnieuwIn()
     {
