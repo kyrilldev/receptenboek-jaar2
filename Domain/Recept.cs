@@ -1,9 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace Receptenboek.Domain
 {
+    [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+    [JsonDerivedType(typeof(Recept), typeDiscriminator: "Algemeen")]
+    [JsonDerivedType(typeof(HoofdgerechtRecept), typeDiscriminator: "Hoofdgerecht")]
+    [JsonDerivedType(typeof(VegetarischRecept), typeDiscriminator: "Vegetarisch")]
+    [JsonDerivedType(typeof(NagerechtRecept), typeDiscriminator: "Nagerecht")]
     public class Recept
     {
         public string Naam { get; set; }

@@ -204,4 +204,56 @@ public class UnitTest1
         // Assert
         Assert.Equal(0, average);
     }
+
+    // =========================================================================
+    // FEAT-05: Would-have Persistentie (OPT-REQ-01 t/m OPT-REQ-03)
+    // =========================================================================
+    [Fact]
+    public void OPT_REQ_01_En_02_JsonPersistentie_SlaatOpEnLaadtOpnieuwIn()
+    {
+        // Arrange
+        string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"test_recepten_{System.Guid.NewGuid()}.json");
+        try
+        {
+            var manager1 = new Receptenboek.Infrastructure.Repositories.ReceptenManager(tempFile);
+            var nieuw = new HoofdgerechtRecept("Lasagne", "Ovenpasta", new(), new(), "Makkelijk");
+
+            // Act: Toevoegen en daarmee opslaan
+            manager1.VoegReceptToe(nieuw);
+
+            // Opnieuw inladen in een nieuwe manager instantie (OPT-REQ-01)
+            var manager2 = new Receptenboek.Infrastructure.Repositories.ReceptenManager(tempFile);
+            var geladenRecepten = manager2.GetAlleRecepten();
+
+            // Assert
+            Assert.True(System.IO.File.Exists(tempFile));
+            Assert.Contains(geladenRecepten, r => r.Naam == "Lasagne" && r is HoofdgerechtRecept);
+        }
+        finally
+        {
+            if (System.IO.File.Exists(tempFile)) System.IO.File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void OPT_REQ_03_JsonPersistentie_CorruptBestand_CrashtNietEnLaadtDefaults()
+    {
+        // Arrange
+        string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"corrupt_recepten_{System.Guid.NewGuid()}.json");
+        System.IO.File.WriteAllText(tempFile, "{ DIT IS ONGELDIGE JSON !!! }");
+
+        try
+        {
+            // Act: Inladen van corrupt bestand mag niet crashen (OPT-REQ-03)
+            var manager = new Receptenboek.Infrastructure.Repositories.ReceptenManager(tempFile);
+            var recepten = manager.GetAlleRecepten();
+
+            // Assert: Heeft niet gecrasht en defaults zijn geladen
+            Assert.Equal(3, recepten.Count);
+        }
+        finally
+        {
+            if (System.IO.File.Exists(tempFile)) System.IO.File.Delete(tempFile);
+        }
+    }
 }
