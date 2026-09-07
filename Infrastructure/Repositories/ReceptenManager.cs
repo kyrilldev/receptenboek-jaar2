@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using Receptenboek.Domain;
 using Receptenboek.Application.Interfaces;
 
@@ -9,14 +11,69 @@ namespace Receptenboek.Infrastructure.Repositories
     public class ReceptenManager : IReceptenRepository
     {
         private readonly List<Recept> _recepten = new();
-
-        public ReceptenManager()
+        private readonly string? _filePath;
+        private static readonly JsonSerializerOptions _jsonOptions = new()
         {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true
+        };
+
+        public ReceptenManager(string? filePath = "recepten.json")
+        {
+            _filePath = filePath;
+            LaadRecepten();
+        }
+
+        private void LaadRecepten()
+        {
+            // OPT-REQ-01: Laden uit extern gegevensbestand bij start
+            if (string.IsNullOrWhiteSpace(_filePath) || !File.Exists(_filePath))
+            {
+                LaadBeginRecepten();
+                SlaReceptenOp();
+                return;
+            }
+
+            // OPT-REQ-03: Melding bij ongeldig bestand, geen crash (graceful fallback)
+            try
+            {
+                string json = File.ReadAllText(_filePath);
+                var geladenRecepten = JsonSerializer.Deserialize<List<Recept>>(json, _jsonOptions);
+                if (geladenRecepten != null && geladenRecepten.Count > 0)
+                {
+                    _recepten.Clear();
+                    _recepten.AddRange(geladenRecepten);
+                    return;
+                }
+            }
+            catch (Exception ex) when (ex is JsonException or IOException)
+            {
+                Console.WriteLine($"⚠️ [OPT-REQ-03] Waarschuwing: Kan '{_filePath}' niet inladen ({ex.Message}). Standaardrecepten worden geladen.");
+            }
+
             LaadBeginRecepten();
+        }
+
+        // OPT-REQ-02: Wijzigingen persistent opslaan
+        public void SlaReceptenOp()
+        {
+            if (string.IsNullOrWhiteSpace(_filePath)) return;
+
+            try
+            {
+                string json = JsonSerializer.Serialize(_recepten, _jsonOptions);
+                File.WriteAllText(_filePath, json);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ Fout bij opslaan van recepten naar '{_filePath}': {ex.Message}");
+            }
         }
 
         private void LaadBeginRecepten()
         {
+            _recepten.Clear();
+
             // Recept 1: Spaghetti Bolognese (Hoofdgerecht)
             var r1 = new HoofdgerechtRecept(
                 "Spaghetti Bolognese",
@@ -108,11 +165,17 @@ namespace Receptenboek.Infrastructure.Repositories
         public void VoegReceptToe(Recept recept)
         {
             _recepten.Add(recept);
+            SlaReceptenOp();
         }
 
         public bool VerwijderRecept(Recept recept)
         {
-            return _recepten.Remove(recept);
+            bool isVerwijderd = _recepten.Remove(recept);
+            if (isVerwijderd)
+            {
+                SlaReceptenOp();
+            }
+            return isVerwijderd;
         }
     }
 }

@@ -14,9 +14,6 @@ namespace Receptenboek.Domain
             Serveertemperatuur = serveertemperatuur;
         }
 
-        protected override void ToonExtraDetails()
-        {
-            System.Console.WriteLine($"   Serveren: 🍧 {Serveertemperatuur}");
-        }
+        public override string? ExtraInformatie => $"Serveren: 🍧 {Serveertemperatuur}";
     }
 }

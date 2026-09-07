@@ -125,28 +125,39 @@ namespace Receptenboek.Presentation
                 plantaardig = ConsoleHelper.LeesJaNee("Dit recept bevat ingrediënten met plantaardige alternatieven. Wilt u de plantaardige variant gebruiken?");
             }
 
-            recept.ToonDetails(aantalPersonen, plantaardig);
+            ReceptPresenter.ToonDetails(recept, aantalPersonen, plantaardig);
         }
 
         private static void VoegNieuwReceptToe()
         {
             Console.WriteLine("\n➕ NIEUW RECEPT TOEVOEGEN");
             Console.WriteLine("-------------------------------------------");
-            Console.WriteLine("Kies het type recept:");
-            Console.WriteLine("  1. Hoofdgerecht");
-            Console.WriteLine("  2. Vegetarisch Recept");
-            Console.WriteLine("  3. Nagerecht / Ontbijt");
-            Console.WriteLine("  4. Algemeen Recept");
-
-            int typeKeuze = ConsoleHelper.LeesInt("Selecteer type [1-4]: ", 1, 4);
+            ReceptType type = KiesReceptType();
             string naam = ConsoleHelper.LeesTekst("Naam recept: ");
             string omschrijving = ConsoleHelper.LeesTekst("Omschrijving recept: ");
 
-            // Ingrediënten toevoegen
+            var ingredienten = LeesIngredienten();
+            var stappen = LeesBereidingsstappen();
+            string? extraKenmerk = VraagExtraKenmerk(type);
+
+            var nieuwRecept = ReceptFactory.MaakRecept(type, naam, omschrijving, ingredienten, stappen, extraKenmerk);
+            _manager.VoegReceptToe(nieuwRecept);
+            Console.WriteLine($"\n✅ Recept '{naam}' is succesvol toegevoegd aan het receptenboek!");
+        }
+
+        private static ReceptType KiesReceptType()
+        {
+            Console.WriteLine("Kies het type recept:");
+            Console.WriteLine("  1. Hoofdgerecht\n  2. Vegetarisch Recept\n  3. Nagerecht / Ontbijt\n  4. Algemeen Recept");
+            return (ReceptType)ConsoleHelper.LeesInt("Selecteer type [1-4]: ", 1, 4);
+        }
+
+        private static List<Ingredient> LeesIngredienten()
+        {
             var ingredienten = new List<Ingredient>();
             Console.WriteLine("\n🛒 INGREDIEËNTEN TOEVOEGEN:");
-            bool nogEenIngredient = true;
-            while (nogEenIngredient)
+            bool nogEen = true;
+            while (nogEen)
             {
                 string ingrNaam = ConsoleHelper.LeesTekst("  • Naam ingrediënt: ");
                 double hoeveelheid = ConsoleHelper.LeesDouble("  • Hoeveelheid (per 1 persoon): ", min: 0.01);
@@ -162,52 +173,41 @@ namespace Receptenboek.Presentation
                 }
 
                 ingredienten.Add(new Ingredient(ingrNaam, hoeveelheid, eenheid, kcal, plantAlt, plantKcal));
-                nogEenIngredient = ConsoleHelper.LeesJaNee("Nog een ingrediënt toevoegen?");
+                nogEen = ConsoleHelper.LeesJaNee("Nog een ingrediënt toevoegen?");
             }
+            return ingredienten;
+        }
 
-            // Bereidingsstappen toevoegen
+        private static List<Bereidingsstap> LeesBereidingsstappen()
+        {
             var stappen = new List<Bereidingsstap>();
             Console.WriteLine("\n👨‍🍳 BEREIDINGSSTAPPEN TOEVOEGEN:");
-            bool nogEenStap = true;
-            int stapTeller = 1;
-            while (nogEenStap)
+            bool nogEen = true;
+            int teller = 1;
+            while (nogEen)
             {
-                string beschrijving = ConsoleHelper.LeesTekst($"  Stap {stapTeller} beschrijving: ");
-                int duur = ConsoleHelper.LeesInt($"  Stap {stapTeller} duur in minuten: ", min: 0);
-
-                string? tip = null;
-                if (ConsoleHelper.LeesJaNee($"  Heeft stap {stapTeller} een tip?"))
-                {
-                    tip = ConsoleHelper.LeesTekst("    💡 Voer de tip in: ");
-                }
+                string beschrijving = ConsoleHelper.LeesTekst($"  Stap {teller} beschrijving: ");
+                int duur = ConsoleHelper.LeesInt($"  Stap {teller} duur in minuten: ", min: 0);
+                string? tip = ConsoleHelper.LeesJaNee($"  Heeft stap {teller} een tip?")
+                    ? ConsoleHelper.LeesTekst("    💡 Voer de tip in: ")
+                    : null;
 
                 stappen.Add(new Bereidingsstap(beschrijving, duur, tip));
-                stapTeller++;
-                nogEenStap = ConsoleHelper.LeesJaNee("Nog een bereidingsstap toevoegen?");
+                teller++;
+                nogEen = ConsoleHelper.LeesJaNee("Nog een bereidingsstap toevoegen?");
             }
+            return stappen;
+        }
 
-            Recept nieuwRecept;
-            switch (typeKeuze)
+        private static string? VraagExtraKenmerk(ReceptType type)
+        {
+            return type switch
             {
-                case 1:
-                    string moeilijkheid = ConsoleHelper.LeesTekst("Moeilijkheidsgraad (bijv. Makkelijk, Gemiddeld, Chef): ");
-                    nieuwRecept = new HoofdgerechtRecept(naam, omschrijving, ingredienten, stappen, moeilijkheid);
-                    break;
-                case 2:
-                    string keurmerk = ConsoleHelper.LeesTekst("Dieetkeurmerk (bijv. 100% Vegetarisch, Vegan): ");
-                    nieuwRecept = new VegetarischRecept(naam, omschrijving, ingredienten, stappen, keurmerk);
-                    break;
-                case 3:
-                    string temp = ConsoleHelper.LeesTekst("Serveertemperatuur (bijv. Warm, Koud, IJskoud): ");
-                    nieuwRecept = new NagerechtRecept(naam, omschrijving, ingredienten, stappen, temp);
-                    break;
-                default:
-                    nieuwRecept = new Recept(naam, omschrijving, ingredienten, stappen);
-                    break;
-            }
-
-            _manager.VoegReceptToe(nieuwRecept);
-            Console.WriteLine($"\n✅ Recept '{naam}' is succesvol toegevoegd aan het receptenboek!");
+                ReceptType.Hoofdgerecht => ConsoleHelper.LeesTekst("Moeilijkheidsgraad (bijv. Makkelijk, Gemiddeld, Chef): "),
+                ReceptType.Vegetarisch => ConsoleHelper.LeesTekst("Dieetkeurmerk (bijv. 100% Vegetarisch, Vegan): "),
+                ReceptType.Nagerecht => ConsoleHelper.LeesTekst("Serveertemperatuur (bijv. Warm, Koud, IJskoud): "),
+                _ => null
+            };
         }
 
         private static void VerwijderRecept()

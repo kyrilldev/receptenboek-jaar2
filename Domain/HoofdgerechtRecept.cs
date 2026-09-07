@@ -14,9 +14,6 @@ namespace Receptenboek.Domain
             Moeilijkheidsgraad = moeilijkheidsgraad;
         }
 
-        protected override void ToonExtraDetails()
-        {
-            System.Console.WriteLine($"   Moeilijkheidsgraad: 👨‍🍳 {Moeilijkheidsgraad}");
-        }
+        public override string? ExtraInformatie => $"Moeilijkheidsgraad: 👨‍🍳 {Moeilijkheidsgraad}";
     }
 }

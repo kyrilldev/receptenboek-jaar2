@@ -1,6 +1,8 @@
-using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.ObjectModel;
+using System.Collections.Generic;
+using System.IO;
 using Receptenboek.Domain;
 using Receptenboek.Application.Services;
+using Receptenboek.Infrastructure.Repositories;
 
 namespace Receptenboek.Tests;
 
@@ -11,123 +13,220 @@ public class UnitTest1
     [InlineData(2, 40)]
     [InlineData(4, 80)]
     [InlineData(45, 900)]
-    public void GetHoeveelheid_4Personen_BerekentVierVoudigeHoeveelheid(int aantalPersonen, int verwachteHoeveelheid)
+    public void GetHoeveelheid_SchaaltMetAantalPersonen(int aantalPersonen, int verwachteHoeveelheid)
     {
+        // Arrange
         var ingredient = new Ingredient("kaas", 20, "g", 80);
 
+        // Act
         var hoeveelheid = ingredient.GetHoeveelheid(aantalPersonen);
 
+        // Assert
         Assert.Equal(verwachteHoeveelheid, hoeveelheid);
     }
 
     [Theory]
     [InlineData(false, "melk")]
     [InlineData(true, "havermelk")]
-    public void GetNaam_PlantaardigAlternatief_GeeftPlantaardigAlternatief(bool gebruikPlantaardig, string verwachteNaam)
+    public void GetNaam_PlantaardigAlternatief_GeeftGekozenVariant(bool gebruikPlantaardig, string verwachteNaam)
     {
+        // Arrange
         var ingredient = new Ingredient("melk", 250, "ml", kcal: 110, "havermelk", plantaardigeKcal: 90);
 
-        var plantaardigeNaam = ingredient.GetNaam(gebruikPlantaardig);
+        // Act
+        var naam = ingredient.GetNaam(gebruikPlantaardig);
 
-        Assert.Equal(verwachteNaam, plantaardigeNaam);
+        // Assert
+        Assert.Equal(verwachteNaam, naam);
     }
 
     [Fact]
-    public void BerekenTotaalKcalorien_SomAlleIngredienten_TotaalVermenigvuldigtMetTwee()
+    public void BerekenTotaalKcal_MeerderePersonen_BerekentCorrecteSom()
     {
-        var recept = new Recept("Spaghetti", "Spaghetti met tomaten saus, gehakt en groenten", [new Ingredient("Spaghetti", 150, "g", 220), new Ingredient("Tomaten Saus", 100, "g", 80), new Ingredient("Gehakt en groenten mix", 80, "g", 120)]);
+        // Arrange
+        var recept = new Recept("Spaghetti", "Spaghetti bolognese", new List<Ingredient>
+        {
+            new Ingredient("Spaghetti", 150, "g", 220),
+            new Ingredient("Tomatensaus", 100, "g", 80),
+            new Ingredient("Gehakt", 80, "g", 120, "Vega gehakt", 90)
+        });
 
-        var totaalKcalorien = recept.BerekenTotaalKcal(2, false);
+        // Act
+        var totaalKcalRegulier = recept.BerekenTotaalKcal(2, gebruikPlantaardig: false);
+        var totaalKcalVega = recept.BerekenTotaalKcal(2, gebruikPlantaardig: true);
 
-        Assert.Equal(840, totaalKcalorien);
+        // Assert
+        Assert.Equal(840, totaalKcalRegulier);
+        Assert.Equal(780, totaalKcalVega);
+    }
+
+    [Fact]
+    public void ReceptFactory_MaaktJuisteSubklasseEnKenmerk()
+    {
+        // Arrange & Act
+        var hoofdgerecht = ReceptFactory.MaakRecept(ReceptType.Hoofdgerecht, "Biefstuk", "Gebakken", new(), new(), "Chef");
+        var vega = ReceptFactory.MaakRecept(ReceptType.Vegetarisch, "Salade", "Fris", new(), new(), "100% Vegan");
+        var toetje = ReceptFactory.MaakRecept(ReceptType.Nagerecht, "IJs", "Koud", new(), new(), "IJskoud");
+
+        // Assert
+        Assert.IsType<HoofdgerechtRecept>(hoofdgerecht);
+        Assert.Contains("Chef", hoofdgerecht.ExtraInformatie);
+
+        Assert.IsType<VegetarischRecept>(vega);
+        Assert.Contains("100% Vegan", vega.ExtraInformatie);
+
+        Assert.IsType<NagerechtRecept>(toetje);
+        Assert.Contains("IJskoud", toetje.ExtraInformatie);
+    }
+
+    [Theory]
+    [InlineData("spaghetti", true)]
+    [InlineData("SPAGHETTI", true)]
+    [InlineData("havermelk", true)]
+    [InlineData("pizza", false)]
+    public void ZoekRecept_VoldoetAanZoekterm_MatchtNaamEnIngredient(string zoekterm, bool verwachtGevonden)
+    {
+        // Arrange
+        var recept = new Recept("Spaghetti Bolognese", "Klassieke pasta", new List<Ingredient>
+        {
+            new Ingredient("Koemelk", 100, "ml", 60, "Havermelk", 45)
+        });
+
+        // Act
+        var resultaat = recept.VoldoetAanZoekterm(zoekterm);
+
+        // Assert
+        Assert.Equal(verwachtGevonden, resultaat);
+    }
+
+    [Fact]
+    public void Bereidingsstap_TipAanwezig_HeeftTipIsTrue()
+    {
+        // Arrange
+        var stapMetTip = new Bereidingsstap("Kook de pasta", 9, "Voeg zout toe aan het water");
+        var stapZonderTip = new Bereidingsstap("Serveer", 2);
+
+        // Assert
+        Assert.True(stapMetTip.HeeftTip);
+        Assert.Equal("Voeg zout toe aan het water", stapMetTip.Tip);
+        Assert.False(stapZonderTip.HeeftTip);
+    }
+
+    [Fact]
+    public void VoegReceptToe_En_VerwijderRecept_WerktCorrect()
+    {
+        // Arrange
+        var manager = new FakeDatabase();
+        var nieuwRecept = new Recept("Pannenkoeken", "Lekker bakken");
+
+        // Act 1: Toevoegen
+        manager.VoegReceptToe(nieuwRecept);
+        var alleReceptenNaToevoegen = manager.GetAlleRecepten();
+
+        // Assert 1
+        Assert.Single(alleReceptenNaToevoegen);
+        Assert.Equal("Pannenkoeken", alleReceptenNaToevoegen[0].Naam);
+
+        // Act 2: Verwijderen
+        bool isVerwijderd = manager.VerwijderRecept(nieuwRecept);
+        var alleReceptenNaVerwijderen = manager.GetAlleRecepten();
+
+        // Assert 2
+        Assert.True(isVerwijderd);
+        Assert.Empty(alleReceptenNaVerwijderen);
     }
 
     [Fact]
     public void BerekenTotaleBereidingstijd_MeerdereStappen_GeeftSomVanStappenDuur()
     {
-        var recept = new Recept("Spaghetti", "Spaghetti met tomaten saus, gehakt en groenten",
-        new List<Ingredient>
-            {
-                new Ingredient("Spaghetti", 150, "g", 220),
-                new Ingredient("Tomaten Saus", 100, "g", 80),
-                new Ingredient("Gehakt en groenten mix", 80, "g", 120)
-            },
-        new List<Bereidingsstap>
-            {
-                new Bereidingsstap("Kook de spaghetti", 5),
-                new Bereidingsstap("Doe de saus in een pan en breng aan de kook", 8),
-                new Bereidingsstap("Voeg samen in één pan en kook verder", 10),
-                new Bereidingsstap("Verspreid over een bord en geniet!", 3)
-            });
+        // Arrange
+        var recept = new Recept("Pasta", "Test", new(), new List<Bereidingsstap>
+        {
+            new Bereidingsstap("Koken", 5),
+            new Bereidingsstap("Saus", 8),
+            new Bereidingsstap("Mengen", 10),
+            new Bereidingsstap("Serveren", 3)
+        });
 
+        // Act & Assert
         Assert.Equal(26, recept.BerekenTotaleBereidingsTijd());
-
-
     }
 
     [Fact]
-    public void BerekenGemiddeldeBereidingsTijd_Test_DeJuisteBeredingstijdViaNepDatabase()
+    public void BerekenGemiddeldeBereidingsTijd_ViaFakeDatabase_GeeftJuistGemiddelde()
     {
-        //per recept in receptenboek
+        // Arrange
         var manager = new FakeDatabase();
-        manager.VoegReceptToe(new Recept("Stampot", "Gestampte aardappels met groenten en vlees", new List<Ingredient>
-        {
-            new Ingredient("Aardappels", 2, "stuks", 120),
-            new Ingredient("Andijvie", 2, "stuks", 180),
-            new Ingredient("Spekjes", 1, "pakje", 400)
-        },
-        new List<Bereidingsstap>
-        {
-            new Bereidingsstap("Stamp de aardappels", 10),
-            new Bereidingsstap("Schil de andijvie", 4),
-            new Bereidingsstap("Mix de 2 en kook door", 5)
-        }));
-        // Variatie 1: Pasta Bolognese
-        manager.VoegReceptToe(new Recept("Pasta Bolognese", "Klassieke Italiaanse pasta met een rijke gehaktsaus", new List<Ingredient>
-        {
-            new Ingredient("Spaghetti", 400, "gram", 350),
-            new Ingredient("Rundergehakt", 500, "gram", 450),
-            new Ingredient("Gezeefde tomaten", 1, "fles", 120),
-            new Ingredient("Ui", 1, "stuk", 60)
-        },
-        new List<Bereidingsstap>
-        {
-            new Bereidingsstap("Snipper de ui en fruit deze aan", 3),
-            new Bereidingsstap("Rul het gehakt en voeg de tomatensaus toe", 12),
-            new Bereidingsstap("Kook de spaghetti beetgaar", 9),
-            new Bereidingsstap("Meng de saus met de pasta en serveer", 2)
-        }));
-
-        // Variatie 2: Groene Smoothie
-        manager.VoegReceptToe(new Recept("Groene Smoothie", "Een frisse en gezonde energieshot voor de ochtend", new List<Ingredient>
-        {
-            new Ingredient("Banaan", 1, "stuk", 100),
-            new Ingredient("Verse spinazie", 100, "gram", 30),
-            new Ingredient("Havermelk", 250, "ml", 120),
-            new Ingredient("Chiazaad", 1, "eetlepel", 60)
-        },
-        new List<Bereidingsstap>
-        {
-            new Bereidingsstap("Pel de banaan en breek in stukken", 1),
-            new Bereidingsstap("Voeg alle ingrediënten toe aan de blender", 2),
-            new Bereidingsstap("Blend op hoge snelheid tot een gladde drank", 2)
-        }));
+        manager.VoegReceptToe(new Recept("R1", "O1", new(), new List<Bereidingsstap> { new Bereidingsstap("S1", 10) }));
+        manager.VoegReceptToe(new Recept("R2", "O2", new(), new List<Bereidingsstap> { new Bereidingsstap("S2", 20) }));
         var stats = new ReceptenStatistiekService(manager);
 
+        // Act
         var average = stats.BerekenGemiddeldeBereidingstijd();
 
-        Assert.Equal(16.666, average, 2);
+        // Assert
+        Assert.Equal(15.0f, average);
     }
 
     [Fact]
-    public void BerekenGemiddeldeBereidingsTijd_EdgeCase_LegeRepository()
+    public void BerekenGemiddeldeBereidingsTijd_EdgeCase_LegeRepository_GeeftNul()
     {
+        // Arrange
         var manager = new FakeDatabase();
-
         var stats = new ReceptenStatistiekService(manager);
 
+        // Act
         var average = stats.BerekenGemiddeldeBereidingstijd();
 
+        // Assert
         Assert.Equal(0, average);
+    }
+
+    [Fact]
+    public void JsonPersistentie_SlaatOpEnLaadtOpnieuwIn()
+    {
+        // Arrange
+        string tempFile = Path.Combine(Path.GetTempPath(), $"test_recepten_{System.Guid.NewGuid()}.json");
+        try
+        {
+            var manager1 = new ReceptenManager(tempFile);
+            var nieuw = new HoofdgerechtRecept("Lasagne", "Ovenpasta", new(), new(), "Makkelijk");
+
+            // Act
+            manager1.VoegReceptToe(nieuw);
+
+            var manager2 = new ReceptenManager(tempFile);
+            var geladenRecepten = manager2.GetAlleRecepten();
+
+            // Assert
+            Assert.True(File.Exists(tempFile));
+            Assert.Contains(geladenRecepten, r => r.Naam == "Lasagne" && r is HoofdgerechtRecept);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void JsonPersistentie_CorruptBestand_CrashtNietEnLaadtDefaults()
+    {
+        // Arrange
+        string tempFile = Path.Combine(Path.GetTempPath(), $"corrupt_recepten_{System.Guid.NewGuid()}.json");
+        File.WriteAllText(tempFile, "{ DIT IS ONGELDIGE JSON !!! }");
+
+        try
+        {
+            // Act
+            var manager = new ReceptenManager(tempFile);
+            var recepten = manager.GetAlleRecepten();
+
+            // Assert
+            Assert.Equal(3, recepten.Count);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
     }
 }
