@@ -116,7 +116,7 @@ namespace Receptenboek.Presentation
 
         private static void ToonReceptMetOpties(Recept recept)
         {
-            // REQ-14: Vraag aantal personen en plantaardige keuze
+            // Vraag aantal personen en plantaardige keuze
             int aantalPersonen = ConsoleHelper.LeesInt("Voor hoeveel personen wilt u het recept bereiden? ", 1, 100, standaardWaarde: 1);
 
             bool plantaardig = false;

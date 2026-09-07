@@ -26,7 +26,7 @@ namespace Receptenboek.Infrastructure.Repositories
 
         private void LaadRecepten()
         {
-            // OPT-REQ-01: Laden uit extern gegevensbestand bij start
+            // Laden uit extern gegevensbestand bij start
             if (string.IsNullOrWhiteSpace(_filePath) || !File.Exists(_filePath))
             {
                 LaadBeginRecepten();
@@ -34,7 +34,7 @@ namespace Receptenboek.Infrastructure.Repositories
                 return;
             }
 
-            // OPT-REQ-03: Melding bij ongeldig bestand, geen crash (graceful fallback)
+            // Melding bij ongeldig bestand, fallback naar standaardrecepten
             try
             {
                 string json = File.ReadAllText(_filePath);
@@ -48,13 +48,13 @@ namespace Receptenboek.Infrastructure.Repositories
             }
             catch (Exception ex) when (ex is JsonException or IOException)
             {
-                Console.WriteLine($"⚠️ [OPT-REQ-03] Waarschuwing: Kan '{_filePath}' niet inladen ({ex.Message}). Standaardrecepten worden geladen.");
+                Console.WriteLine($"⚠️ Waarschuwing: Kan '{_filePath}' niet inladen ({ex.Message}). Standaardrecepten worden geladen.");
             }
 
             LaadBeginRecepten();
         }
 
-        // OPT-REQ-02: Wijzigingen persistent opslaan
+        // Wijzigingen persistent opslaan
         public void SlaReceptenOp()
         {
             if (string.IsNullOrWhiteSpace(_filePath)) return;
