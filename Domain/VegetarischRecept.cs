@@ -14,9 +14,6 @@ namespace Receptenboek.Domain
             DieetKeurmerk = dieetKeurmerk;
         }
 
-        protected override void ToonExtraDetails()
-        {
-            System.Console.WriteLine($"   Keurmerk: 🌱 {DieetKeurmerk}");
-        }
+        public override string? ExtraInformatie => $"Keurmerk: 🌱 {DieetKeurmerk}";
     }
 }
