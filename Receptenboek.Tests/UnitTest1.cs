@@ -1,20 +1,19 @@
 using System.Collections.Generic;
+using System.IO;
 using Receptenboek.Domain;
 using Receptenboek.Application.Services;
+using Receptenboek.Infrastructure.Repositories;
 
 namespace Receptenboek.Tests;
 
 public class UnitTest1
 {
-    // =========================================================================
-    // AC-07.1: Schaling van hoeveelheden op basis van aantal personen
-    // =========================================================================
     [Theory]
     [InlineData(1, 20)]
     [InlineData(2, 40)]
     [InlineData(4, 80)]
     [InlineData(45, 900)]
-    public void AC07_1_GetHoeveelheid_SchaaltMetAantalPersonen(int aantalPersonen, int verwachteHoeveelheid)
+    public void GetHoeveelheid_SchaaltMetAantalPersonen(int aantalPersonen, int verwachteHoeveelheid)
     {
         // Arrange
         var ingredient = new Ingredient("kaas", 20, "g", 80);
@@ -26,13 +25,10 @@ public class UnitTest1
         Assert.Equal(verwachteHoeveelheid, hoeveelheid);
     }
 
-    // =========================================================================
-    // AC-08.1 & AC-08.2: Plantaardig alternatief selectie
-    // =========================================================================
     [Theory]
     [InlineData(false, "melk")]
     [InlineData(true, "havermelk")]
-    public void AC08_1_GetNaam_PlantaardigAlternatief_GeeftGekozenVariant(bool gebruikPlantaardig, string verwachteNaam)
+    public void GetNaam_PlantaardigAlternatief_GeeftGekozenVariant(bool gebruikPlantaardig, string verwachteNaam)
     {
         // Arrange
         var ingredient = new Ingredient("melk", 250, "ml", kcal: 110, "havermelk", plantaardigeKcal: 90);
@@ -44,11 +40,8 @@ public class UnitTest1
         Assert.Equal(verwachteNaam, naam);
     }
 
-    // =========================================================================
-    // AC-09.1: Kcal-totaal passend bij aantal personen en plantaardige keuze
-    // =========================================================================
     [Fact]
-    public void AC09_1_BerekenTotaalKcal_MeerderePersonen_BerekentCorrecteSom()
+    public void BerekenTotaalKcal_MeerderePersonen_BerekentCorrecteSom()
     {
         // Arrange
         var recept = new Recept("Spaghetti", "Spaghetti bolognese", new List<Ingredient>
@@ -58,9 +51,8 @@ public class UnitTest1
             new Ingredient("Gehakt", 80, "g", 120, "Vega gehakt", 90)
         });
 
-        // Act (2 personen, regulier vlees)
+        // Act
         var totaalKcalRegulier = recept.BerekenTotaalKcal(2, gebruikPlantaardig: false);
-        // Act (2 personen, vega alternatief: 220 + 80 + 90 = 390 * 2 = 780)
         var totaalKcalVega = recept.BerekenTotaalKcal(2, gebruikPlantaardig: true);
 
         // Assert
@@ -68,11 +60,8 @@ public class UnitTest1
         Assert.Equal(780, totaalKcalVega);
     }
 
-    // =========================================================================
-    // AC-05.1: Receptvarianten via Factory en kenmerken
-    // =========================================================================
     [Fact]
-    public void AC05_1_ReceptFactory_MaaktJuisteSubklasseEnKenmerk()
+    public void ReceptFactory_MaaktJuisteSubklasseEnKenmerk()
     {
         // Arrange & Act
         var hoofdgerecht = ReceptFactory.MaakRecept(ReceptType.Hoofdgerecht, "Biefstuk", "Gebakken", new(), new(), "Chef");
@@ -90,15 +79,12 @@ public class UnitTest1
         Assert.Contains("IJskoud", toetje.ExtraInformatie);
     }
 
-    // =========================================================================
-    // AC-06.1 & AC-06.2: Zoeken op naam en ingrediënt (inclusief plantaardig)
-    // =========================================================================
     [Theory]
     [InlineData("spaghetti", true)]
     [InlineData("SPAGHETTI", true)]
     [InlineData("havermelk", true)]
     [InlineData("pizza", false)]
-    public void AC06_ZoekRecept_VoldoetAanZoekterm_MatchtNaamEnIngredient(string zoekterm, bool verwachtGevonden)
+    public void ZoekRecept_VoldoetAanZoekterm_MatchtNaamEnIngredient(string zoekterm, bool verwachtGevonden)
     {
         // Arrange
         var recept = new Recept("Spaghetti Bolognese", "Klassieke pasta", new List<Ingredient>
@@ -113,11 +99,8 @@ public class UnitTest1
         Assert.Equal(verwachtGevonden, resultaat);
     }
 
-    // =========================================================================
-    // AC-10.1: Tips bij bereidingsstappen
-    // =========================================================================
     [Fact]
-    public void AC10_1_Bereidingsstap_TipAanwezig_HeeftTipIsTrue()
+    public void Bereidingsstap_TipAanwezig_HeeftTipIsTrue()
     {
         // Arrange
         var stapMetTip = new Bereidingsstap("Kook de pasta", 9, "Voeg zout toe aan het water");
@@ -129,11 +112,8 @@ public class UnitTest1
         Assert.False(stapZonderTip.HeeftTip);
     }
 
-    // =========================================================================
-    // AC-13.1 & AC-14.1: Toevoegen en verwijderen (CRUD) in repository
-    // =========================================================================
     [Fact]
-    public void AC13_1_En_AC14_1_VoegReceptToe_En_VerwijderRecept_WerktCorrect()
+    public void VoegReceptToe_En_VerwijderRecept_WerktCorrect()
     {
         // Arrange
         var manager = new FakeDatabase();
@@ -156,9 +136,6 @@ public class UnitTest1
         Assert.Empty(alleReceptenNaVerwijderen);
     }
 
-    // =========================================================================
-    // Service- & Berekeningstests (Test Doubles)
-    // =========================================================================
     [Fact]
     public void BerekenTotaleBereidingstijd_MeerdereStappen_GeeftSomVanStappenDuur()
     {
@@ -205,55 +182,51 @@ public class UnitTest1
         Assert.Equal(0, average);
     }
 
-    // =========================================================================
-    // FEAT-05: Would-have Persistentie (OPT-REQ-01 t/m OPT-REQ-03)
-    // =========================================================================
     [Fact]
-    public void OPT_REQ_01_En_02_JsonPersistentie_SlaatOpEnLaadtOpnieuwIn()
+    public void JsonPersistentie_SlaatOpEnLaadtOpnieuwIn()
     {
         // Arrange
-        string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"test_recepten_{System.Guid.NewGuid()}.json");
+        string tempFile = Path.Combine(Path.GetTempPath(), $"test_recepten_{System.Guid.NewGuid()}.json");
         try
         {
-            var manager1 = new Receptenboek.Infrastructure.Repositories.ReceptenManager(tempFile);
+            var manager1 = new ReceptenManager(tempFile);
             var nieuw = new HoofdgerechtRecept("Lasagne", "Ovenpasta", new(), new(), "Makkelijk");
 
-            // Act: Toevoegen en daarmee opslaan
+            // Act
             manager1.VoegReceptToe(nieuw);
 
-            // Opnieuw inladen in een nieuwe manager instantie (OPT-REQ-01)
-            var manager2 = new Receptenboek.Infrastructure.Repositories.ReceptenManager(tempFile);
+            var manager2 = new ReceptenManager(tempFile);
             var geladenRecepten = manager2.GetAlleRecepten();
 
             // Assert
-            Assert.True(System.IO.File.Exists(tempFile));
+            Assert.True(File.Exists(tempFile));
             Assert.Contains(geladenRecepten, r => r.Naam == "Lasagne" && r is HoofdgerechtRecept);
         }
         finally
         {
-            if (System.IO.File.Exists(tempFile)) System.IO.File.Delete(tempFile);
+            if (File.Exists(tempFile)) File.Delete(tempFile);
         }
     }
 
     [Fact]
-    public void OPT_REQ_03_JsonPersistentie_CorruptBestand_CrashtNietEnLaadtDefaults()
+    public void JsonPersistentie_CorruptBestand_CrashtNietEnLaadtDefaults()
     {
         // Arrange
-        string tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"corrupt_recepten_{System.Guid.NewGuid()}.json");
-        System.IO.File.WriteAllText(tempFile, "{ DIT IS ONGELDIGE JSON !!! }");
+        string tempFile = Path.Combine(Path.GetTempPath(), $"corrupt_recepten_{System.Guid.NewGuid()}.json");
+        File.WriteAllText(tempFile, "{ DIT IS ONGELDIGE JSON !!! }");
 
         try
         {
-            // Act: Inladen van corrupt bestand mag niet crashen (OPT-REQ-03)
-            var manager = new Receptenboek.Infrastructure.Repositories.ReceptenManager(tempFile);
+            // Act
+            var manager = new ReceptenManager(tempFile);
             var recepten = manager.GetAlleRecepten();
 
-            // Assert: Heeft niet gecrasht en defaults zijn geladen
+            // Assert
             Assert.Equal(3, recepten.Count);
         }
         finally
         {
-            if (System.IO.File.Exists(tempFile)) System.IO.File.Delete(tempFile);
+            if (File.Exists(tempFile)) File.Delete(tempFile);
         }
     }
 }
