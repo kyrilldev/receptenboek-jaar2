@@ -6,7 +6,8 @@ namespace Receptenboek.Application.Interfaces
 {
     public interface IReceptenRepository
     {
-        public List<Recept> GetAlleRecepten();
-        public void VoegReceptToe(Recept recept);
+        List<Recept> GetAlleRecepten();
+        void VoegReceptToe(Recept recept);
+        bool VerwijderRecept(Recept recept);
     }
 }

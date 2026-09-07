@@ -47,62 +47,7 @@ namespace Receptenboek.Domain
             return false;
         }
 
-        public virtual void ToonDetails(int aantalPersonen = 1, bool gebruikPlantaardig = false)
-        {
-            Console.WriteLine($"\n==================================================");
-            Console.WriteLine($"📖 RECEPT: {Naam.ToUpper()}");
-            Console.WriteLine($"   Categorie: {Categorie}");
-            ToonExtraDetails();
-            Console.WriteLine($"--------------------------------------------------");
-            Console.WriteLine($"Omschrijving: {Omschrijving}");
-            Console.WriteLine($"Aantal personen: {aantalPersonen}" + (gebruikPlantaardig && HeeftPlantaardigeOpties() ? " (Plantaardige variant)" : ""));
-            Console.WriteLine($"--------------------------------------------------");
-
-            Console.WriteLine("\n🛒 INGREDIEËNTEN (opsomming):");
-            if (Ingredienten.Count == 0)
-            {
-                Console.WriteLine("  (Geen ingrediënten vermeld)");
-            }
-            else
-            {
-                foreach (var ingr in Ingredienten)
-                {
-                    double hoeveelheid = ingr.GetHoeveelheid(aantalPersonen);
-                    string naam = ingr.GetNaam(gebruikPlantaardig);
-                    int kcal = ingr.GetKcal(aantalPersonen, gebruikPlantaardig);
-
-                    string notaPlantaardig = (gebruikPlantaardig && ingr.HeeftPlantaardigAlternatief) ? " 🌱 [Plantaardig]" : "";
-                    Console.WriteLine($"  • {hoeveelheid:0.##} {ingr.Eenheid} {naam}{notaPlantaardig} ({kcal} kcal)");
-                }
-            }
-
-            int totaalKcal = BerekenTotaalKcal(aantalPersonen, gebruikPlantaardig);
-            Console.WriteLine($"\n🔥 Totale energiewaarde: {totaalKcal} kcal (voor {aantalPersonen} {(aantalPersonen == 1 ? "persoon" : "personen")})");
-
-            Console.WriteLine("\n👨‍🍳 BEREIDINGSSTAPPEN (genummerd):");
-            if (Bereidingsstappen.Count == 0)
-            {
-                Console.WriteLine("  (Geen bereidingsstappen vermeld)");
-            }
-            else
-            {
-                for (int i = 0; i < Bereidingsstappen.Count; i++)
-                {
-                    var stap = Bereidingsstappen[i];
-                    Console.WriteLine($"  {i + 1}. {stap.Beschrijving} [{stap.DuurMinuten} min]");
-                    if (stap.HeeftTip)
-                    {
-                        Console.WriteLine($"     💡 Tip: {stap.Tip}");
-                    }
-                }
-            }
-            Console.WriteLine($"==================================================\n");
-        }
-
-        protected virtual void ToonExtraDetails()
-        {
-            // Hook voor afgeleide klassen
-        }
+        public virtual string? ExtraInformatie => null;
 
         public virtual float BerekenTotaleBereidingsTijd()
         {
